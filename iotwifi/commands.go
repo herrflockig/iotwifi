@@ -41,6 +41,36 @@ func (c *Command) AddApInterface() {
 	cmd.Wait()
 }
 
+// BrideAPtoEth bridges the connection from eth0 to uap0
+func (c *Command) BridgeAPtoEth() {
+    cmd := exec.Command("sed", "-i", "s/#?net.ipv4.ip_forward.*/net.ipv4.ip_forward = 1/", "/etc/sysctl.conf")
+    cmd.Run()
+    cmd := exec.Command("sysctl", "-p")
+    cmd.Run()
+    iptables_args := []string{
+        "-t",
+        "nat",
+        "-A",
+        "POSTROUTING",
+        "--out-interface",
+        "uap0",
+        "-j",
+        "MASQUERADE"
+    }
+    cmd := exec.Command("iptables", iptables_args...)
+    cmd.Run()
+    iptables_args := []string{
+        "-A",
+        "FORWARD",
+        "--in-interface",
+        "eth0",
+        "-j",
+        "ACCEPT"
+    }
+    cmd := exec.Command("iptables", iptables_args...)
+    cmd.Run()
+}
+
 // CheckInterface checks the AP interface.
 func (c *Command) CheckApInterface() {
 	cmd := exec.Command("ifconfig", "uap0")
